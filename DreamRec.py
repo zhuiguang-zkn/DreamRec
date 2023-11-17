@@ -453,6 +453,7 @@ if __name__ == '__main__':
     topk=[10, 20, 50]
 
     device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+    print(device)
     timesteps = args.timesteps
 
 
