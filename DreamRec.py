@@ -452,7 +452,7 @@ if __name__ == '__main__':
     item_num = data_statis['item_num'][0]  # total number of items
     topk=[10, 20, 50]
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
     timesteps = args.timesteps
 
 
