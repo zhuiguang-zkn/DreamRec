@@ -443,7 +443,7 @@ def evaluate(model, test_data, diff, device):
 if __name__ == '__main__':
 
     # args = parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda)
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
     data_directory = './data/' + args.data
     data_statis = pd.read_pickle(
@@ -453,7 +453,6 @@ if __name__ == '__main__':
     topk=[10, 20, 50]
 
     device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
-    print(device)
     timesteps = args.timesteps
 
 
