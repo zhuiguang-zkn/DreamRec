@@ -71,6 +71,7 @@ def setup_seed(seed):
      torch.backends.cudnn.deterministic = True
 
 setup_seed(args.random_seed)
+torch.pi = math.pi
 
 
 def extract(a, t, x_shape):
