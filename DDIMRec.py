@@ -242,7 +242,7 @@ class diffusion():
 
         x_start = torch.randn_like(h)
 
-        for i in tqdm(reversed((0,ddim_timesteps))):
+        for i in tqdm(reversed(range(0, ddim_timesteps)), desc='sampling loop time step', total=ddim_timesteps):
             t = torch.full((batch_size,), ddim_timestep_seq[i], device=device, dtype=torch.long)
             prev_t = torch.full((batch_size,), ddim_timestep_prev_seq[i], device=device, dtype=torch.long)
 
