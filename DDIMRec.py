@@ -12,7 +12,7 @@ import logging
 import time as Time
 from utility import pad_history,calculate_hit,extract_axis_1
 from collections import Counter
-import tqdm
+from tqdm import tqdm
 from Modules_ori import *
 
 logging.getLogger().setLevel(logging.INFO)
