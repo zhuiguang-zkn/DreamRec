@@ -42,7 +42,7 @@ def parse_args():
                         help='Learning rate.')
     parser.add_argument('--l2_decay', type=float, default=0,
                         help='l2 loss reg coef.')
-    parser.add_argument('--cuda', type=int, default=3,
+    parser.add_argument('--cuda', type=int, default=2,
                         help='cuda device.')
     parser.add_argument('--dropout_rate', type=float, default=0.1,
                         help='dropout ')
