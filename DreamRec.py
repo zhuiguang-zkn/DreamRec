@@ -435,10 +435,11 @@ def evaluate(model, test_data, diff, device):
 
         if i == 1:
             hr_20 = hr_purchase
+            ndcg_20 = ng_purchase
 
     print('{:<10.6f} {:<10.6f} {:<10.6f} {:<10.6f} {:<10.6f} {:<10.6f}'.format(hr_list[0], (ndcg_list[0]), hr_list[1], (ndcg_list[1]), hr_list[2], (ndcg_list[2])))
 
-    return hr_20
+    return hr_20, ndcg_20
 
 
 if __name__ == '__main__':
@@ -482,6 +483,7 @@ if __name__ == '__main__':
 
     num_rows=train_data.shape[0]
     num_batches=int(num_rows/args.batch_size)
+    best_hr_20, best_ndcg_20 = 0., 0.
     for i in range(args.epoch):
         start_time = Time.time()
         for j in range(num_batches):
@@ -523,10 +525,16 @@ if __name__ == '__main__':
                 print('-------------------------- VAL PHRASE --------------------------')
                 _ = evaluate(model, 'val_data.df', diff, device)
                 print('-------------------------- TEST PHRASE -------------------------')
-                _ = evaluate(model, 'test_data.df', diff, device)
+                hr_20, ndcg_20 = evaluate(model, 'test_data.df', diff, device)
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
-
+                if hr_20 > best_hr_20: 
+                    best_hr_20 = hr_20
+                    best_ndcg_20 = ndcg_20
+                    best_epoch = i
+                    # torch.save(model.state_dict(), './saved_model/' + args.data + '_best_model.pt')
+                    # print('Best model saved.')
+    print('Best epoch: ', best_epoch, 'Best HR@20: ', best_hr_20, 'Best NDCG@20: ', best_ndcg_20)
 
 
 
