@@ -12,6 +12,7 @@ import logging
 import time as Time
 from utility import pad_history,calculate_hit,extract_axis_1
 from collections import Counter
+import tqdm
 from Modules_ori import *
 
 logging.getLogger().setLevel(logging.INFO)
@@ -241,7 +242,7 @@ class diffusion():
 
         x_start = torch.randn_like(h)
 
-        for i in range(reversed((0,ddim_timesteps))):
+        for i in tqdm(reversed((0,ddim_timesteps))):
             t = torch.full((batch_size,), ddim_timestep_seq[i], device=device, dtype=torch.long)
             prev_t = torch.full((batch_size,), ddim_timestep_prev_seq[i], device=device, dtype=torch.long)
 
@@ -558,7 +559,7 @@ if __name__ == '__main__':
                 print("Epoch {:03d}; ".format(i) + 'Train loss: {:.4f}; '.format(loss) + "Time cost: " + Time.strftime(
                         "%H: %M: %S", Time.gmtime(Time.time()-start_time)))
 
-            if (i + 1) % 10 == 0:
+            if (i + 1) % 1 == 0:
                 
                 eval_start = Time.time()
                 print('-------------------------- VAL PHRASE --------------------------')
