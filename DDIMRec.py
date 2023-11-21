@@ -220,7 +220,46 @@ class diffusion():
             x = self.p_sample(model_forward, model_forward_uncon, x, h, torch.full((h.shape[0], ), n, device=device, dtype=torch.long), n)
 
         return x
+    @torch.no_grad()
+    def ddim_sample(self, model_forward, model_forward_uncon, h, ddim_timesteps=50, ddim_discr_method="uniform", ddim_eta = 0):
+        if ddim_discr_method == 'uniform':
+            c = self.timesteps // ddim_timesteps
+            ddim_timestep_seq = np.asarray(list(range(0, self.timesteps, c)))
+        elif ddim_discr_method == 'quad':
+            ddim_timestep_seq = (
+                (np.linspace(0, np.sqrt(self.timesteps * .8), ddim_timesteps)) ** 2
+            ).astype(int)
+        else:
+            raise NotImplementedError(f'There is no ddim discretization method called "{ddim_discr_method}"')
+        
+         # add one to get the final alpha values right (the ones from first scale to data during sampling)
+        ddim_timestep_seq = ddim_timestep_seq + 1
+        # previous sequence
+        ddim_timestep_prev_seq = np.append(np.array([0]), ddim_timestep_seq[:-1])
 
+        batch_size = h.shape[0]
+
+        x_start = torch.randn_like(h)
+
+        for i in range(reversed((0,ddim_timesteps))):
+            t = torch.full((batch_size,), ddim_timestep_seq[i], device=device, dtype=torch.long)
+            prev_t = torch.full((batch_size,), ddim_timestep_prev_seq[i], device=device, dtype=torch.long)
+
+            alpha_cumprod_t = extract(self.alphas_cumprod, t, h.shape)
+            alpha_cumprod_t_prev = extract(self.alphas_cumprod, prev_t, h.shape)
+
+            predicted_x = (1 + self.w) * model_forward(x_start, h, t) - self.w * model_forward_uncon(x_start, t)
+            predicted_noise = self.predict_noise_from_start(x_start, t, predicted_x)
+
+            sigmas_t = ddim_eta * torch.sqrt(
+                (1 - alpha_cumprod_t_prev) / (1 - alpha_cumprod_t) * (1 - alpha_cumprod_t / alpha_cumprod_t_prev))
+
+            pred_dir_xt = torch.sqrt(1 - alpha_cumprod_t_prev - sigmas_t**2) * predicted_noise
+
+            x_prev = torch.sqrt(alpha_cumprod_t_prev) * predicted_x + pred_dir_xt + sigmas_t * torch.randn_like(x_start)
+            x_start = x_prev
+
+        return x_start
 
 
 class SinusoidalPositionEmbeddings(nn.Module):
@@ -380,7 +419,8 @@ class Tenc(nn.Module):
         state_hidden = extract_axis_1(ff_out, len_states - 1)
         h = state_hidden.squeeze()
 
-        x = diff.sample(self.forward, self.forward_uncon, h)
+        # x = diff.sample(self.forward, self.forward_uncon, h)
+        x = diff.ddim_sample(self.forward, self.forward_uncon, h)
         
         test_item_emb = self.item_embeddings.weight
         scores = torch.matmul(x, test_item_emb.transpose(0, 1))
