@@ -560,7 +560,7 @@ if __name__ == '__main__':
                 print("Epoch {:03d}; ".format(i) + 'Train loss: {:.4f}; '.format(loss) + "Time cost: " + Time.strftime(
                         "%H: %M: %S", Time.gmtime(Time.time()-start_time)))
 
-            if (i + 1) % 1 == 0:
+            if (i + 1) % 10 == 0:
                 
                 eval_start = Time.time()
                 print('-------------------------- VAL PHRASE --------------------------')
