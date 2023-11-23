@@ -361,6 +361,7 @@ def evaluate(model, test_data, device, consistency_sampler, sigma_style='linear'
 
     hr_list = []
     ndcg_list = []
+    print('sigma style: ', sigma_style)
     print('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s}'.format('HR@'+str(topk[0]), 'NDCG@'+str(topk[0]), 'HR@'+str(topk[1]), 'NDCG@'+str(topk[1]), 'HR@'+str(topk[2]), 'NDCG@'+str(topk[2])))
     for i in range(len(topk)):
         hr_purchase=hit_purchase[i]/total_purchase
