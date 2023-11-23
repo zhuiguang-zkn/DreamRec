@@ -7,7 +7,7 @@ from torch import Tensor, nn
 
 from tqdm import tqdm
 
-from .utils import pad_dims_like
+from utils import pad_dims_like
 
 
 def timesteps_schedule(
