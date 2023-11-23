@@ -488,9 +488,6 @@ if __name__ == '__main__':
     topk=[10, 20, 50]
 
     device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-    timesteps = args.timesteps
-
-
     model = Tenc(args.hidden_factor,item_num, seq_size, args.dropout_rate, args.diffuser_type, device)
     # diff = diffusion(args.timesteps, args.beta_start, args.beta_end, args.w)
 
@@ -533,7 +530,6 @@ if __name__ == '__main__':
         initial_timesteps = args.initial_timesteps,
         final_timesteps = args.final_timesteps,
     )
-
 
     best_epoch = 0
     best_hr_20, best_ndcg_20 = 0., 0.
