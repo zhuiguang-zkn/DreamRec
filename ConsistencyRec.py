@@ -287,7 +287,7 @@ class Tenc(nn.Module):
 
         return h  
     
-    def predict(self, states, len_states, consistency_sampler):
+    def predict(self, states, len_states, consistency_sampler, sigma_style='linear'):
         #hidden
         inputs_emb = self.item_embeddings(states)
         inputs_emb += self.positional_embeddings(torch.arange(self.state_size).to(self.device))
@@ -303,7 +303,7 @@ class Tenc(nn.Module):
         h = state_hidden.squeeze()
 
         # x = diff.sample(self.forward, self.forward_uncon, h)
-        x = self.sample(consistency_sampler, h)
+        x = self.sample(consistency_sampler, h, sigmas_style=sigma_style)
         
         test_item_emb = self.item_embeddings.weight
         scores = torch.matmul(x, test_item_emb.transpose(0, 1))
@@ -325,7 +325,7 @@ class Tenc(nn.Module):
         )
         return samples
 
-def evaluate(model, test_data, device, consistency_sampler):
+def evaluate(model, test_data, device, consistency_sampler, sigma_style='linear'):
     eval_data=pd.read_pickle(os.path.join(data_directory, test_data))
 
     batch_size = 100
@@ -349,7 +349,7 @@ def evaluate(model, test_data, device, consistency_sampler):
         states = torch.LongTensor(states)
         states = states.to(device)
 
-        prediction = model.predict(states, np.array(len_seq_b), consistency_sampler)
+        prediction = model.predict(states, np.array(len_seq_b), consistency_sampler, sigma_style)
         _, topK = prediction.topk(100, dim=1, largest=True, sorted=True)
         topK = topK.cpu().detach().numpy()
         sorted_list2=np.flip(topK,axis=1)
@@ -500,13 +500,20 @@ if __name__ == '__main__':
                 print('-------------------------- VAL PHRASE --------------------------')
                 _ = evaluate(model, 'val_data.df', device, consistency_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
-                hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler)
+                for sigma_style in ['linear', 'exp']:
+                    linear_hr_20, linear_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear')
+                    exp_hr_20, exp_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='exp')
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
-                if hr_20 > best_hr_20: 
+                if linear_hr_20 > best_hr_20: 
                     counter = 0
-                    best_hr_20 = hr_20
-                    best_ndcg_20 = ndcg_20
+                    best_hr_20 = linear_hr_20
+                    best_ndcg_20 = linear_ndcg_20
+                    best_epoch = current_training_step
+                if exp_hr_20 > best_hr_20: 
+                    counter = 0
+                    best_hr_20 = exp_hr_20
+                    best_ndcg_20 = exp_ndcg_20
                     best_epoch = current_training_step
 
     print('Best epoch: ', best_epoch, 'Best HR@20: ', best_hr_20, 'Best NDCG@20: ', best_ndcg_20)
