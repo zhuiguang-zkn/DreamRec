@@ -575,16 +575,11 @@ class ConsistencySamplingAndEditing:
     def __call__(
         self,
         model: nn.Module,
-        y: Tensor,
+        x_initial: Tensor,
         sigmas: Iterable[Union[Tensor, float]],
-        mask: Optional[Tensor] = None,
-        transform_fn: Callable[[Tensor], Tensor] = lambda x: x,
-        inverse_transform_fn: Callable[[Tensor], Tensor] = lambda x: x,
-        start_from_y: bool = False,
-        add_initial_noise: bool = True,
         clip_denoised: bool = False,
-        verbose: bool = False,
         sequence_rep: Tensor = None,
+        verbose: bool = False, 
         **kwargs: Any,
     ) -> Tensor:
         """Runs the sampling/zero-shot editing loop.
@@ -625,31 +620,30 @@ class ConsistencySamplingAndEditing:
             Edited/sampled sample.
         """
         # Set mask to all ones which is useful for sampling and style transfer
-        if mask is None:
-            mask = torch.ones_like(y)
+        # if mask is None:
+        #     mask = torch.ones_like(y)
 
         # Use y as an initial sample which is useful for tasks like style transfer
         # and interpolation where we want to use content from the reference sample
-        x = y if start_from_y else torch.zeros_like(y)
+        # x = y if start_from_y else torch.zeros_like(y)
 
         # Sample at the end of the schedule
-        y = self.__mask_transform(x, y, mask, transform_fn, inverse_transform_fn)
+        # y = self.__mask_transform(x, y, mask, transform_fn, inverse_transform_fn)
         # For tasks like interpolation where noise will already be added in advance we
         # can skip the noising process
-        x = y + sigmas[0] * torch.randn_like(y) if add_initial_noise else y
+        # x = y + sigmas[0] * torch.randn_like(y) if add_initial_noise else y
         sigma = torch.full((x.shape[0],), sigmas[0], dtype=x.dtype, device=x.device)
         x = model_forward_wrapper(
-            model, x, sigma, sequence_rep, self.sigma_data, self.sigma_min, **kwargs
+            model, x_initial, sigma, sequence_rep, self.sigma_data, self.sigma_min, **kwargs
         )
         if clip_denoised:
             x = x.clamp(min=-1.0, max=1.0)
-        x = self.__mask_transform(x, y, mask, transform_fn, inverse_transform_fn)
 
         # Progressively denoise the sample and skip the first step as it has already
         # been run
         pbar = tqdm(sigmas[1:], disable=(not verbose))
         for sigma in pbar:
-            pbar.set_description(f"sampling (σ={sigma:.4f})")
+            pbar.set_description(f"sampling (sigma={sigma:.4f})")
 
             sigma = torch.full((x.shape[0],), sigma, dtype=x.dtype, device=x.device)
             x = x + pad_dims_like(
@@ -660,8 +654,6 @@ class ConsistencySamplingAndEditing:
             )
             if clip_denoised:
                 x = x.clamp(min=-1.0, max=1.0)
-            x = self.__mask_transform(x, y, mask, transform_fn, inverse_transform_fn)
-
         return x
 
     def interpolate(

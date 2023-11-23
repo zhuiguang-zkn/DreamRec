@@ -125,112 +125,15 @@ def betas_for_alpha_bar(num_diffusion_timesteps, alpha_bar, max_beta=0.999):
         betas.append(min(1 - alpha_bar(t2) / alpha_bar(t1), max_beta))
     return np.array(betas)
 
-# class diffusion():
-    def __init__(self, timesteps, beta_start, beta_end, w):
-        self.timesteps = timesteps
-        self.beta_start = beta_start
-        self.beta_end = beta_end
-        self.w = w
-
-        if args.beta_sche == 'linear':
-            self.betas = linear_beta_schedule(timesteps=self.timesteps, beta_start=self.beta_start, beta_end=self.beta_end)
-        elif args.beta_sche == 'exp':
-            self.betas = exp_beta_schedule(timesteps=self.timesteps)
-        elif args.beta_sche =='cosine':
-            self.betas = cosine_beta_schedule(timesteps=self.timesteps)
-        elif args.beta_sche =='sqrt':
-            self.betas = torch.tensor(betas_for_alpha_bar(self.timesteps, lambda t: 1-np.sqrt(t + 0.0001),)).float()
-
-        # define alphas 
-        self.alphas = 1. - self.betas
-        self.alphas_cumprod = torch.cumprod(self.alphas, axis=0)
-        self.alphas_cumprod_prev = F.pad(self.alphas_cumprod[:-1], (1, 0), value=1.0)
-        self.sqrt_recip_alphas = torch.sqrt(1.0 / self.alphas)
-
-        # calculations for diffusion q(x_t | x_{t-1}) and others
-        self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)
-        self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1. - self.alphas_cumprod)
-
-        self.sqrt_recip_alphas_cumprod = torch.sqrt(1. / self.alphas_cumprod)
-        self.sqrt_recipm1_alphas_cumprod = torch.sqrt(1. / self.alphas_cumprod - 1)
-
-
-        self.posterior_mean_coef1 = self.betas * torch.sqrt(self.alphas_cumprod_prev) / (1. - self.alphas_cumprod)
-        self.posterior_mean_coef2 = (1. - self.alphas_cumprod_prev) * torch.sqrt(self.alphas) / (1. - self.alphas_cumprod)
-
-        # calculations for posterior q(x_{t-1} | x_t, x_0)
-        self.posterior_variance = self.betas * (1. - self.alphas_cumprod_prev) / (1. - self.alphas_cumprod)
-    
-    def q_sample(self, x_start, t, noise=None):
-        # print(self.betas)
-        if noise is None:
-            noise = torch.randn_like(x_start)
-            # noise = torch.randn_like(x_start) / 100
-        sqrt_alphas_cumprod_t = extract(self.sqrt_alphas_cumprod, t, x_start.shape)
-        sqrt_one_minus_alphas_cumprod_t = extract(
-            self.sqrt_one_minus_alphas_cumprod, t, x_start.shape
-        )
-        return sqrt_alphas_cumprod_t * x_start + sqrt_one_minus_alphas_cumprod_t * noise
-
-    def p_losses(self, denoise_model, x_start, h, t, noise=None, loss_type="l2"):
-        # 
-        if noise is None:
-            noise = torch.randn_like(x_start) 
-            # noise = torch.randn_like(x_start) / 100
-        
-        # 
-        x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)  # e_n^t
-
-
-        predicted_x = denoise_model(x_noisy, h, t)
-
-        
-        # 
-        if loss_type == 'l1':
-            loss = F.l1_loss(x_start, predicted_x)
-        elif loss_type == 'l2':
-            loss = F.mse_loss(x_start, predicted_x)
-        elif loss_type == "huber":
-            loss = F.smooth_l1_loss(x_start, predicted_x)
-        else:
-            raise NotImplementedError()
-
-        return loss, predicted_x
-
-    def predict_noise_from_start(self, x_t, t, x0):
-        return (
-            (extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) / \
-            extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
-        )
-    
-    @torch.no_grad()
-    def p_sample(self, model_forward, model_forward_uncon, x, h, t, t_index):
-
-        x_start = (1 + self.w) * model_forward(x, h, t) - self.w * model_forward_uncon(x, t)
-        x_t = x 
-        model_mean = (
-            extract(self.posterior_mean_coef1, t, x_t.shape) * x_start +
-            extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
-        )
-
-        if t_index == 0:
-            return model_mean
-        else:
-            posterior_variance_t = extract(self.posterior_variance, t, x.shape)
-            noise = torch.randn_like(x)
-
-            return model_mean + torch.sqrt(posterior_variance_t) * noise 
-        
-    @torch.no_grad()
-    def sample(self, model_forward, model_forward_uncon, h):
-        x = torch.randn_like(h)
-        # x = torch.randn_like(h) / 100
-
-        for n in reversed(range(0, self.timesteps)):
-            x = self.p_sample(model_forward, model_forward_uncon, x, h, torch.full((h.shape[0], ), n, device=device, dtype=torch.long), n)
-
-        return x
-
+def generate_sigma_list(start_value, num, decay_rate, decay_style='linear'):
+    sigma_list = []
+    for i in range(num):
+        if decay_style == 'linear':
+            value = start_value - decay_rate * i
+        elif decay_style == 'exp':
+            value = start_value * math.exp(-decay_rate * i)
+        sigma_list.append(value)
+    return sigma_list
 
 
 class SinusoidalPositionEmbeddings(nn.Module):
@@ -408,11 +311,15 @@ class Tenc(nn.Module):
         return scores
 
     @torch.no_grad()
-    def sample(self, consistency_sampler, h):
+    def sample(self, consistency_sampler, h, sigmas_style='linear', sigma_num=10):
+        if sigmas_style == 'linear':
+            sigma_list = generate_sigma_list(start_value=args.sigma_max, num=sigma_num, decay_rate=(args.sigma_max-args.sigma_min)/sigma_num, decay_style='linear')
+        elif sigmas_style == 'exp':
+            sigma_list = generate_sigma_list(start_value=args.sigma_max, num=sigma_num, decay_rate=0.2, decay_style='exp')
         samples = consistency_sampler(
             model=self,
-            y=torch.randn_like(h),
-            sigmas=[80.0],
+            x_initial=torch.randn_like(h),
+            sigmas=sigma_list,
             clip_denoised=False,
             sequence_rep=h
         )
@@ -601,7 +508,7 @@ if __name__ == '__main__':
                     best_hr_20 = hr_20
                     best_ndcg_20 = ndcg_20
                     best_epoch = current_training_step
-                    
+
     print('Best epoch: ', best_epoch, 'Best HR@20: ', best_hr_20, 'Best NDCG@20: ', best_ndcg_20)
 
 
