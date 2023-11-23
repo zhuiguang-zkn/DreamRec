@@ -60,7 +60,7 @@ def parse_args():
                         help=' Schedule hyper-parameter.')
     parser.add_argument('--sigma_data', type=float, default=0.5,
                         help='Standard deviation of the data.')
-    parser.add_argument('--initial _timesteps', type=int, default=2,
+    parser.add_argument('--initial_timesteps', type=int, default=2,
                         help='Schedule timesteps at the start of training.')
     parser.add_argument('--final_timesteps', type=int, default=150,
                         help='Schedule timesteps at the end of training.')
@@ -579,7 +579,7 @@ if __name__ == '__main__':
             if (current_training_step + 1) % 1 == 0:
                 consistency_sampler = ConsistencySamplingAndEditing(
                                         sigma_min=args.sigma_min,
-                                        sigma_max=args.sigma_max,
+                                        sigma_data=args.sigma_data,
                                     )
                 eval_start = Time.time()
                 print('-------------------------- VAL PHRASE --------------------------')
