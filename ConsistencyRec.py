@@ -408,7 +408,7 @@ class Tenc(nn.Module):
     @torch.no_grad()
     def sample(self, consistency_sampler, h):
         samples = consistency_sampler(
-            student_model=self,
+            model=self,
             y=torch.randn_like(h),
             sigmas=[80.0],
             clip_denoised=False,
