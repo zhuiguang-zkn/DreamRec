@@ -416,7 +416,7 @@ class Tenc(nn.Module):
         )
         return samples
 
-def evaluate(model, test_data, diff, device, consistency_sampler):
+def evaluate(model, test_data, device, consistency_sampler):
     eval_data=pd.read_pickle(os.path.join(data_directory, test_data))
 
     batch_size = 100
@@ -440,7 +440,7 @@ def evaluate(model, test_data, diff, device, consistency_sampler):
         states = torch.LongTensor(states)
         states = states.to(device)
 
-        prediction = model.predict(states, np.array(len_seq_b), diff, consistency_sampler)
+        prediction = model.predict(states, np.array(len_seq_b), consistency_sampler)
         _, topK = prediction.topk(100, dim=1, largest=True, sorted=True)
         topK = topK.cpu().detach().numpy()
         sorted_list2=np.flip(topK,axis=1)
@@ -483,7 +483,6 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
     model = Tenc(args.hidden_factor,item_num, seq_size, args.dropout_rate, args.diffuser_type, device)
-    # diff = diffusion(args.timesteps, args.beta_start, args.beta_end, args.w)
 
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, eps=1e-8, weight_decay=args.l2_decay)
@@ -550,7 +549,6 @@ if __name__ == '__main__':
             x_start = model.cacu_x(target)  # e_n^0
 
             h = model.cacu_h(seq, len_seq, args.p) # c_{n-1}
-            # loss, predicted_x = diff.p_losses(model, x_start, h, n, loss_type='l2')
             output = consistency_training(
                 student_model=model, 
                 teacher_model=teacher_model, 
