@@ -326,12 +326,6 @@ class Tenc(nn.Module):
             nn.GELU(),
             nn.Linear(self.hidden_size*2, self.hidden_size)
         )
-        
-        self.consistency_sampler = ConsistencySamplingAndEditing(
-            sigma_min=args.sigma_min,
-            sigma_max=args.sigma_max,
-        )
-
 
     def forward(self, x, sigma, h):
         sigma = self.noise_mlp(sigma)
@@ -388,7 +382,7 @@ class Tenc(nn.Module):
 
         return h  
     
-    def predict(self, states, len_states, diff):
+    def predict(self, states, len_states, consistency_sampler):
         #hidden
         inputs_emb = self.item_embeddings(states)
         inputs_emb += self.positional_embeddings(torch.arange(self.state_size).to(self.device))
@@ -404,7 +398,7 @@ class Tenc(nn.Module):
         h = state_hidden.squeeze()
 
         # x = diff.sample(self.forward, self.forward_uncon, h)
-        x = self.sample(h)
+        x = self.sample(consistency_sampler, h)
         
         test_item_emb = self.item_embeddings.weight
         scores = torch.matmul(x, test_item_emb.transpose(0, 1))
@@ -412,8 +406,8 @@ class Tenc(nn.Module):
         return scores
 
     @torch.no_grad()
-    def sample(self, h):
-        samples = self.consistency_sampler(
+    def sample(self, consistency_sampler, h):
+        samples = consistency_sampler(
             student_model=self,
             y=torch.randn_like(h),
             sigmas=[80.0],
@@ -422,7 +416,7 @@ class Tenc(nn.Module):
         )
         return samples
 
-def evaluate(model, test_data, diff, device):
+def evaluate(model, test_data, diff, device, consistency_sampler):
     eval_data=pd.read_pickle(os.path.join(data_directory, test_data))
 
     batch_size = 100
@@ -446,7 +440,7 @@ def evaluate(model, test_data, diff, device):
         states = torch.LongTensor(states)
         states = states.to(device)
 
-        prediction = model.predict(states, np.array(len_seq_b), diff)
+        prediction = model.predict(states, np.array(len_seq_b), diff, consistency_sampler)
         _, topK = prediction.topk(100, dim=1, largest=True, sorted=True)
         topK = topK.cpu().detach().numpy()
         sorted_list2=np.flip(topK,axis=1)
@@ -583,11 +577,15 @@ if __name__ == '__main__':
                         "%H: %M: %S", Time.gmtime(Time.time()-start_time)))
 
             if (current_training_step + 1) % 1 == 0:
+                consistency_sampler = ConsistencySamplingAndEditing(
+                                        sigma_min=args.sigma_min,
+                                        sigma_max=args.sigma_max,
+                                    )
                 eval_start = Time.time()
                 print('-------------------------- VAL PHRASE --------------------------')
-                _ = evaluate(model, 'val_data.df', device)
+                _ = evaluate(model, 'val_data.df', device, consistencyz_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
-                hr_20, ndcg_20 = evaluate(model, 'test_data.df', device)
+                hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler)
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
                 if hr_20 > best_hr_20: 
