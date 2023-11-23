@@ -68,6 +68,10 @@ def parse_args():
                         help='loss type.')    
     parser.add_argument('--total_training_step', type=int, default=1000,
                         help='total training step.')
+    parser.add_argument('--sigma_style', type=str, default='linear',
+                        help='sigma style.')
+    parser.add_argument('--sigma_num', type=int, default=10,    
+                        help='sigma num.')  
     
     return parser.parse_args()
 
@@ -287,7 +291,7 @@ class Tenc(nn.Module):
 
         return h  
     
-    def predict(self, states, len_states, consistency_sampler, sigma_style='linear'):
+    def predict(self, states, len_states, consistency_sampler, sigma_style='linear', sigma_num=10):
         #hidden
         inputs_emb = self.item_embeddings(states)
         inputs_emb += self.positional_embeddings(torch.arange(self.state_size).to(self.device))
@@ -303,7 +307,7 @@ class Tenc(nn.Module):
         h = state_hidden.squeeze()
 
         # x = diff.sample(self.forward, self.forward_uncon, h)
-        x = self.sample(consistency_sampler, h, sigmas_style=sigma_style)
+        x = self.sample(consistency_sampler, h, sigmas_style=sigma_style, sigma_num=sigma_num)
         
         test_item_emb = self.item_embeddings.weight
         scores = torch.matmul(x, test_item_emb.transpose(0, 1))
@@ -325,7 +329,7 @@ class Tenc(nn.Module):
         )
         return samples
 
-def evaluate(model, test_data, device, consistency_sampler, sigma_style='linear'):
+def evaluate(model, test_data, device, consistency_sampler, sigma_style='linear', sigma_num=10):
     eval_data=pd.read_pickle(os.path.join(data_directory, test_data))
 
     batch_size = 100
@@ -349,7 +353,7 @@ def evaluate(model, test_data, device, consistency_sampler, sigma_style='linear'
         states = torch.LongTensor(states)
         states = states.to(device)
 
-        prediction = model.predict(states, np.array(len_seq_b), consistency_sampler, sigma_style)
+        prediction = model.predict(states, np.array(len_seq_b), consistency_sampler, sigma_style, sigma_num)
         _, topK = prediction.topk(100, dim=1, largest=True, sorted=True)
         topK = topK.cpu().detach().numpy()
         sorted_list2=np.flip(topK,axis=1)
@@ -361,7 +365,7 @@ def evaluate(model, test_data, device, consistency_sampler, sigma_style='linear'
 
     hr_list = []
     ndcg_list = []
-    print('sigma style: ', sigma_style)
+    print('sigma style: ', sigma_style, 'sigma num: ', sigma_num)
     print('{:<10s} {:<10s} {:<10s} {:<10s} {:<10s} {:<10s}'.format('HR@'+str(topk[0]), 'NDCG@'+str(topk[0]), 'HR@'+str(topk[1]), 'NDCG@'+str(topk[1]), 'HR@'+str(topk[2]), 'NDCG@'+str(topk[2])))
     for i in range(len(topk)):
         hr_purchase=hit_purchase[i]/total_purchase
@@ -501,11 +505,9 @@ if __name__ == '__main__':
                 print('-------------------------- VAL PHRASE --------------------------')
                 _ = evaluate(model, 'val_data.df', device, consistency_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
-                for sigma_style in ['linear', 'exp']:
-                    linear_hr_20, linear_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear')
-                    print("hello1")
-                    exp_hr_20, exp_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='exp')
-                    print("hello2")
+                for sigma_num in [10, 20]:
+                    linear_hr_20, linear_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear', sigma_num=sigma_num)
+                    exp_hr_20, exp_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='exp', sigma_num=sigma_num)
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
                 if linear_hr_20 > best_hr_20: 
