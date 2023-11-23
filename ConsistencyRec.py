@@ -496,7 +496,7 @@ if __name__ == '__main__':
                 print("Epoch {:03d}; ".format(current_training_step) + 'Train loss: {:.4f}; '.format(step_loss) + "Time cost: " + Time.strftime(
                         "%H: %M: %S", Time.gmtime(Time.time()-start_time)))
 
-            if (current_training_step + 1) % 1 == 0:
+            if (current_training_step + 1) % 5 == 0:
                 consistency_sampler = ConsistencySamplingAndEditing(
                                         sigma_min=args.sigma_min,
                                         sigma_data=args.sigma_data,
@@ -506,20 +506,20 @@ if __name__ == '__main__':
                 _ = evaluate(model, 'val_data.df', device, consistency_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
                 for sigma_num in [10, 20]:
-                    linear_hr_20, linear_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear', sigma_num=sigma_num)
-                    exp_hr_20, exp_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='exp', sigma_num=sigma_num)
+                    hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear', sigma_num=sigma_num)
+                    if hr_20 > best_hr_20: 
+                        counter = 0
+                        best_hr_20 = hr_20
+                        best_ndcg_20 = ndcg_20
+                        best_epoch = current_training_step
+                    hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='exp', sigma_num=sigma_num)
+                    if hr_20 > best_hr_20:
+                        counter = 0
+                        best_hr_20 = hr_20
+                        best_ndcg_20 = ndcg_20
+                        best_epoch = current_training_step
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
-                if linear_hr_20 > best_hr_20: 
-                    counter = 0
-                    best_hr_20 = linear_hr_20
-                    best_ndcg_20 = linear_ndcg_20
-                    best_epoch = current_training_step
-                if exp_hr_20 > best_hr_20: 
-                    counter = 0
-                    best_hr_20 = exp_hr_20
-                    best_ndcg_20 = exp_ndcg_20
-                    best_epoch = current_training_step
 
     print('Best epoch: ', best_epoch, 'Best HR@20: ', best_hr_20, 'Best NDCG@20: ', best_ndcg_20)
 
