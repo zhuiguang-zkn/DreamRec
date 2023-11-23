@@ -553,10 +553,11 @@ if __name__ == '__main__':
             # loss, predicted_x = diff.p_losses(model, x_start, h, n, loss_type='l2')
             output = consistency_training(
                 student_model=model, 
-                tearcher_model=teacher_model, 
+                teacher_model=teacher_model, 
                 x=x_start, 
                 current_training_step=current_training_step, 
                 total_training_steps=args.epoch,
+                h=h
             )
             loss = loss_fn(output.predicted, output.target)
 
