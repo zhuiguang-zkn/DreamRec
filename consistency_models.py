@@ -632,7 +632,7 @@ class ConsistencySamplingAndEditing:
         # For tasks like interpolation where noise will already be added in advance we
         # can skip the noising process
         # x = y + sigmas[0] * torch.randn_like(y) if add_initial_noise else y
-        sigma = torch.full((x.shape[0],), sigmas[0], dtype=x.dtype, device=x.device)
+        sigma = torch.full((x_initial.shape[0],), sigmas[0], dtype=x.dtype, device=x.device)
         x = model_forward_wrapper(
             model, x_initial, sigma, sequence_rep, self.sigma_data, self.sigma_min, **kwargs
         )
