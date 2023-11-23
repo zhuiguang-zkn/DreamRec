@@ -601,12 +601,7 @@ if __name__ == '__main__':
                     best_hr_20 = hr_20
                     best_ndcg_20 = ndcg_20
                     best_epoch = current_training_step
-                # 如果连续三次评估结果都没有提升，则提前结束训练
-                else:
-                    counter += 1
-                    if counter >= 3:
-                        break
-
+                    
     print('Best epoch: ', best_epoch, 'Best HR@20: ', best_hr_20, 'Best NDCG@20: ', best_ndcg_20)
 
 
