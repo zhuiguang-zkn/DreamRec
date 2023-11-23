@@ -525,6 +525,7 @@ if __name__ == '__main__':
     num_rows=train_data.shape[0]
     num_batches=int(num_rows/args.batch_size)
     best_hr_20, best_ndcg_20 = 0.0, 0.0
+    counter = 0 # for early stopping
     for i in range(args.epoch):
         start_time = Time.time()
         for j in range(num_batches):
@@ -571,9 +572,15 @@ if __name__ == '__main__':
                 print('----------------------------------------------------------------')
 
                 if hr_20 > best_hr_20:
+                    counter = 0
                     best_hr_20 = hr_20
                     best_ndcg_20 = ndcg_20
                     best_epoch = i
+                
+                else:
+                    counter += 1
+                    if counter >= 3:
+                        break
 
     print('Best epoch: ', best_epoch, 'Best HR@20: ', best_hr_20, 'Best NDCG@20: ', best_ndcg_20)
 
