@@ -435,7 +435,7 @@ def evaluate(model, test_data, diff, device):
 
         if i == 1:
             hr_20 = hr_purchase
-            ndcg_20 = ng_purchase
+            ndcg_20 = ng_purchase[0,0]
 
     print('{:<10.6f} {:<10.6f} {:<10.6f} {:<10.6f} {:<10.6f} {:<10.6f}'.format(hr_list[0], (ndcg_list[0]), hr_list[1], (ndcg_list[1]), hr_list[2], (ndcg_list[2])))
 
