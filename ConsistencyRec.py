@@ -34,12 +34,6 @@ def parse_args():
                         help='gru_layers')
     parser.add_argument('--hidden_factor', type=int, default=64,
                         help='Number of hidden factors, i.e., embedding size.')
-    parser.add_argument('--timesteps', type=int, default=200,
-                        help='timesteps for diffusion')
-    parser.add_argument('--beta_end', type=float, default=0.02,
-                        help='beta end of diffusion')
-    parser.add_argument('--beta_start', type=float, default=0.0001,
-                        help='beta start of diffusion')
     parser.add_argument('--lr', type=float, default=0.005,
                         help='Learning rate.')
     parser.add_argument('--l2_decay', type=float, default=0,
@@ -47,8 +41,6 @@ def parse_args():
     parser.add_argument('--cuda', type=int, default=2,
                         help='cuda device.')
     parser.add_argument('--dropout_rate', type=float, default=0.1,
-                        help='dropout ')
-    parser.add_argument('--w', type=float, default=2.0,
                         help='dropout ')
     parser.add_argument('--p', type=float, default=0.1,
                         help='dropout ')
@@ -58,8 +50,6 @@ def parse_args():
                         help='type of diffuser.')
     parser.add_argument('--optimizer', type=str, default='adam',
                         help='type of optimizer.')
-    parser.add_argument('--beta_sche', nargs='?', default='exp',
-                        help='')
     parser.add_argument('--descri', type=str, default='',
                         help='description of the work.')
     parser.add_argument('--sigma_min', type=float, default=0.002,
@@ -570,8 +560,6 @@ if __name__ == '__main__':
             x_start = model.cacu_x(target)  # e_n^0
 
             h = model.cacu_h(seq, len_seq, args.p) # c_{n-1}
-
-            n = torch.randint(0, args.timesteps, (args.batch_size, ), device=device).long()
             # loss, predicted_x = diff.p_losses(model, x_start, h, n, loss_type='l2')
             output = consistency_training(
                 student_model=model, 
