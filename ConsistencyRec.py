@@ -14,6 +14,9 @@ from utility import pad_history,calculate_hit,extract_axis_1
 from collections import Counter
 from Modules_ori import *
 
+from consistency_models import * 
+from utils import *
+
 logging.getLogger().setLevel(logging.INFO)
 
 def parse_args():
@@ -59,6 +62,21 @@ def parse_args():
                         help='')
     parser.add_argument('--descri', type=str, default='',
                         help='description of the work.')
+    parser.add_argument('--sigma_min', type=float, default=0.002,
+                        help='Minimum standard deviation of the noise.')
+    parser.add_argument('--sigma_max', type=float, default=80.0,
+                        help='Maximum standard deviation of the noise.')
+    parser.add_argument('--rho', type=float, default=7.0,
+                        help=' Schedule hyper-parameter.')
+    parser.add_argument('--sigma_data', type=float, default=0.5,
+                        help='Standard deviation of the data.')
+    parser.add_argument('--initial _timesteps', type=int, default=2,
+                        help='Schedule timesteps at the start of training.')
+    parser.add_argument('--final_timesteps', type=int, default=150,
+                        help='Schedule timesteps at the end of training.')
+    parser.add_argument('--loss_type', type=str, default='l2',
+                        help='loss type.')    
+    
     return parser.parse_args()
 
 args = parse_args()
@@ -115,7 +133,7 @@ def betas_for_alpha_bar(num_diffusion_timesteps, alpha_bar, max_beta=0.999):
         betas.append(min(1 - alpha_bar(t2) / alpha_bar(t1), max_beta))
     return np.array(betas)
 
-class diffusion():
+# class diffusion():
     def __init__(self, timesteps, beta_start, beta_end, w):
         self.timesteps = timesteps
         self.beta_start = beta_start
@@ -236,7 +254,24 @@ class SinusoidalPositionEmbeddings(nn.Module):
         embeddings = time[:, None] * embeddings[None, :]
         embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
         return embeddings
-    
+
+class NoiseLevelEmbedding(nn.Module):
+    def __init__(self, channels: int, scale: float = 16.0) -> None:
+        super().__init__()
+
+        self.W = nn.Parameter(torch.randn(channels // 2) * scale, requires_grad=False)
+
+        self.projection = nn.Sequential(
+            nn.Linear(channels, 4 * channels),
+            nn.SiLU(),
+            nn.Linear(4 * channels, channels),
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        h = x[:, None] * self.W[None, :] * 2 * torch.pi
+        h = torch.cat([torch.sin(h), torch.cos(h)], dim=-1)
+
+        return self.projection(h)
         
 class Tenc(nn.Module):
     def __init__(self, hidden_size, item_num, state_size, dropout, diffuser_type, device, num_heads=1):
@@ -269,12 +304,7 @@ class Tenc(nn.Module):
         self.mh_attn = MultiHeadAttention(hidden_size, hidden_size, num_heads, dropout)
         self.feed_forward = PositionwiseFeedForward(hidden_size, hidden_size, dropout)
         self.s_fc = nn.Linear(hidden_size, item_num)
-        # self.ac_func = nn.ReLU()
 
-        # self.step_embeddings = nn.Embedding(
-        #     num_embeddings=50,
-        #     embedding_dim=hidden_size
-        # )
 
         self.step_mlp = nn.Sequential(
             SinusoidalPositionEmbeddings(self.hidden_size),
@@ -282,6 +312,8 @@ class Tenc(nn.Module):
             nn.GELU(),
             nn.Linear(self.hidden_size*2, self.hidden_size),
         )
+
+        self.noise_mlp = NoiseLevelEmbedding(self.hidden_size)
 
         self.emb_mlp = nn.Sequential(
             nn.SiLU(),
@@ -294,28 +326,29 @@ class Tenc(nn.Module):
             nn.Linear(self.hidden_size*2, self.hidden_size),
         )
 
-
         if self.diffuser_type =='mlp1':
             self.diffuser = nn.Sequential(
                 nn.Linear(self.hidden_size*3, self.hidden_size)
-        )
+            )
         elif self.diffuser_type =='mlp2':
             self.diffuser = nn.Sequential(
             nn.Linear(self.hidden_size * 3, self.hidden_size*2),
             nn.GELU(),
             nn.Linear(self.hidden_size*2, self.hidden_size)
         )
+        
+        self.consistency_sampler = ConsistencySamplingAndEditing(
+            sigma_min=args.sigma_min,
+            sigma_max=args.sigma_max,
+        )
 
 
-    def forward(self, x, h, step):
-
-        t = self.step_mlp(step)  # Convert time_step to embedding
-
-
+    def forward(self, x, sigma, h):
+        sigma = self.noise_mlp(sigma)
         if self.diffuser_type == 'mlp1':
-            res = self.diffuser(torch.cat((x, h, t), dim=1))
+            res = self.diffuser(torch.cat((x, h, sigma), dim=1))
         elif self.diffuser_type == 'mlp2':
-            res = self.diffuser(torch.cat((x, h, t), dim=1))
+            res = self.diffuser(torch.cat((x, h, sigma), dim=1))
         return res
 
     def forward_uncon(self, x, step):
@@ -380,14 +413,24 @@ class Tenc(nn.Module):
         state_hidden = extract_axis_1(ff_out, len_states - 1)
         h = state_hidden.squeeze()
 
-        x = diff.sample(self.forward, self.forward_uncon, h)
+        # x = diff.sample(self.forward, self.forward_uncon, h)
+        x = self.sample(h)
         
         test_item_emb = self.item_embeddings.weight
         scores = torch.matmul(x, test_item_emb.transpose(0, 1))
 
         return scores
 
-
+    @torch.no_grad()
+    def sample(self, h):
+        samples = self.consistency_sampler(
+            student_model=self,
+            y=torch.randn_like(h),
+            sigmas=[80.0],
+            clip_denoised=False,
+            sequence_rep=h
+        )
+        return samples
 
 def evaluate(model, test_data, diff, device):
     eval_data=pd.read_pickle(os.path.join(data_directory, test_data))
@@ -459,7 +502,7 @@ if __name__ == '__main__':
 
 
     model = Tenc(args.hidden_factor,item_num, seq_size, args.dropout_rate, args.diffuser_type, device)
-    diff = diffusion(args.timesteps, args.beta_start, args.beta_end, args.w)
+    # diff = diffusion(args.timesteps, args.beta_start, args.beta_end, args.w)
 
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, eps=1e-8, weight_decay=args.l2_decay)
@@ -470,23 +513,43 @@ if __name__ == '__main__':
     elif args.optimizer =='rmsprop':
         optimizer = torch.optim.RMSprop(model.parameters(), lr=args.lr, eps=1e-8, weight_decay=args.l2_decay)
 
+    if args.loss_type == 'l1':
+        loss_fn = F.l1_loss
+    elif args.loss_type == 'l2':
+        loss_fn = F.mse_loss
+    elif args.loss_type == "huber":
+        loss_fn = F.smooth_l1_loss
+    else:
+        raise NotImplementedError()
+
+
     # scheduler = lr_scheduler.LinearLR(optimizer, start_factor=0.1, end_factor=1, total_iters=20)
     
     model.to(device)
-    # optimizer.to(device)
+    teacher_model = Tenc(args.hidden_factor,item_num, seq_size, args.dropout_rate, args.diffuser_type, device)
+    teacher_model.to(device)
+    teacher_model.load_state_dict(model.state_dict())
 
     train_data = pd.read_pickle(os.path.join(data_directory, 'train_data.df'))
 
-    total_step=0
-    hr_max = 0
-    best_epoch = 0
-
     num_rows=train_data.shape[0]
     num_batches=int(num_rows/args.batch_size)
+
+    consistency_training = ConsistencyTraining(
+        sigma_min = args.sigma_min,
+        sigma_max = args.sigma_max,
+        rho = args.rho,
+        sigma_data= args.sigma_data,
+        initial_timesteps = args.initial_timesteps,
+        final_timesteps = args.final_timesteps,
+    )
+
+
+    best_epoch = 0
     best_hr_20, best_ndcg_20 = 0., 0.
     counter = 0  # counter for stopping early
 
-    for i in range(args.epoch):
+    for current_training_step in range(args.epoch):
         start_time = Time.time()
         for j in range(num_batches):
             batch = train_data.sample(n=args.batch_size).to_dict()
@@ -509,31 +572,45 @@ if __name__ == '__main__':
             h = model.cacu_h(seq, len_seq, args.p) # c_{n-1}
 
             n = torch.randint(0, args.timesteps, (args.batch_size, ), device=device).long()
-            loss, predicted_x = diff.p_losses(model, x_start, h, n, loss_type='l2')
+            # loss, predicted_x = diff.p_losses(model, x_start, h, n, loss_type='l2')
+            output = consistency_training(
+                student_model=model, 
+                tearcher_model=teacher_model, 
+                x=x_start, 
+                current_training_step=current_training_step, 
+                total_training_steps=args.epoch,
+            )
+            loss = loss_fn(output.predicted, output.target)
 
             loss.backward()
             optimizer.step()
-
+        # EMA update
+        ema_decay_rate = ema_decay_rate_schedule(
+            output.num_timesteps,
+            initial_ema_decay_rate=0.95,
+            initial_timesteps=2
+        )
+        update_ema_model_(teacher_model, model, ema_decay_rate)
 
         # scheduler.step()
         if args.report_epoch:
-            if i % 1 == 0:
-                print("Epoch {:03d}; ".format(i) + 'Train loss: {:.4f}; '.format(loss) + "Time cost: " + Time.strftime(
+            if current_training_step % 1 == 0:
+                print("Epoch {:03d}; ".format(current_training_step) + 'Train loss: {:.4f}; '.format(loss) + "Time cost: " + Time.strftime(
                         "%H: %M: %S", Time.gmtime(Time.time()-start_time)))
 
-            if (i + 1) % 10 == 0:
+            if (current_training_step + 1) % 1 == 0:
                 eval_start = Time.time()
                 print('-------------------------- VAL PHRASE --------------------------')
-                _ = evaluate(model, 'val_data.df', diff, device)
+                _ = evaluate(model, 'val_data.df', device)
                 print('-------------------------- TEST PHRASE -------------------------')
-                hr_20, ndcg_20 = evaluate(model, 'test_data.df', diff, device)
+                hr_20, ndcg_20 = evaluate(model, 'test_data.df', device)
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
                 if hr_20 > best_hr_20: 
                     counter = 0
                     best_hr_20 = hr_20
                     best_ndcg_20 = ndcg_20
-                    best_epoch = i
+                    best_epoch = current_training_step
                 # 如果连续三次评估结果都没有提升，则提前结束训练
                 else:
                     counter += 1
