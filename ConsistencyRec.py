@@ -503,7 +503,9 @@ if __name__ == '__main__':
                 print('-------------------------- TEST PHRASE -------------------------')
                 for sigma_style in ['linear', 'exp']:
                     linear_hr_20, linear_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear')
+                    print("hello1")
                     exp_hr_20, exp_ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='exp')
+                    print("hello2")
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
                 if linear_hr_20 > best_hr_20: 
