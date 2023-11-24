@@ -61,6 +61,6 @@ for LR in 0.00005 0.0001 0.001 0.01 ; do
         --final_timesteps $FINAL_TIMESTEPS \
         --loss_type $LOSS_TYPE \
         --total_training_step $TOTAL_TRAINING_STEP \
-        > ./log/ConsistencyRec_data_${DATA}_lr_${LR}.log & 
+        > ./log/ConsistencyRec_data_${DATA}_lr_${LR}.log 2>&1 & 
 done
                                                                             
