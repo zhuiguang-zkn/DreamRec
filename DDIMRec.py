@@ -577,10 +577,10 @@ if __name__ == '__main__':
                     best_ndcg_20 = ndcg_20
                     best_epoch = i
                 
-                else:
-                    counter += 1
-                    if counter >= 3:
-                        break
+                # else:
+                #     counter += 1
+                #     if counter >= 3:
+                #         break
 
     print('Best epoch: ', best_epoch, 'Best HR@20: ', best_hr_20, 'Best NDCG@20: ', best_ndcg_20)
 
