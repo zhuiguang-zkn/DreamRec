@@ -255,7 +255,7 @@ class Tenc(nn.Module):
 
         return x
 
-    def cacu_h(self, states, len_states, p):
+    def cacu_h(self, states, len_states, p=0.1):
         #hidden
         inputs_emb = self.item_embeddings(states)
         inputs_emb += self.positional_embeddings(torch.arange(self.state_size).to(self.device))
@@ -457,7 +457,7 @@ if __name__ == '__main__':
 
             x_start = model.cacu_x(target)  # e_n^0
 
-            h = model.cacu_h(seq, len_seq, args.p) # c_{n-1}
+            h = model.cacu_h(seq, len_seq) # c_{n-1}
             output = consistency_training(
                 student_model=model, 
                 teacher_model=teacher_model, 
