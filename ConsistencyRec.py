@@ -22,8 +22,6 @@ logging.getLogger().setLevel(logging.INFO)
 def parse_args():
     parser = argparse.ArgumentParser(description="Run supervised GRU.")
 
-    parser.add_argument('--epoch', type=int, default=1000,
-                        help='Number of max epochs.')
     parser.add_argument('--data', nargs='?', default='yc',
                         help='yc, ks, zhihu')
     parser.add_argument('--random_seed', type=int, default=100,
@@ -41,8 +39,6 @@ def parse_args():
     parser.add_argument('--cuda', type=int, default=2,
                         help='cuda device.')
     parser.add_argument('--dropout_rate', type=float, default=0.1,
-                        help='dropout ')
-    parser.add_argument('--p', type=float, default=0.1,
                         help='dropout ')
     parser.add_argument('--report_epoch', type=bool, default=True,
                         help='report frequency')
@@ -68,11 +64,6 @@ def parse_args():
                         help='loss type.')    
     parser.add_argument('--total_training_step', type=int, default=1000,
                         help='total training step.')
-    parser.add_argument('--sigma_style', type=str, default='linear',
-                        help='sigma style.')
-    parser.add_argument('--sigma_num', type=int, default=10,    
-                        help='sigma num.')  
-    
     return parser.parse_args()
 
 args = parse_args()
@@ -279,14 +270,14 @@ class Tenc(nn.Module):
         state_hidden = extract_axis_1(ff_out, len_states - 1)
         h = state_hidden.squeeze()
 
-        B, D = h.shape[0], h.shape[1]
-        mask1d = (torch.sign(torch.rand(B) - p) + 1) / 2
-        maske1d = mask1d.view(B, 1)
-        mask = torch.cat([maske1d] * D, dim=1)
-        mask = mask.to(self.device)
+        # B, D = h.shape[0], h.shape[1]
+        # mask1d = (torch.sign(torch.rand(B) - p) + 1) / 2
+        # maske1d = mask1d.view(B, 1)
+        # mask = torch.cat([maske1d] * D, dim=1)
+        # mask = mask.to(self.device)
 
         # print(h.device, self.none_embedding(torch.tensor([0]).to(self.device)).device, mask.device)
-        h = h * mask + self.none_embedding(torch.tensor([0]).to(self.device)) * (1-mask)
+        # h = h * mask + self.none_embedding(torch.tensor([0]).to(self.device)) * (1-mask)
 
 
         return h  
@@ -520,6 +511,7 @@ if __name__ == '__main__':
                         best_epoch = current_training_step
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
+
 
     print('Best epoch: ', best_epoch, 'Best HR@20: ', best_hr_20, 'Best NDCG@20: ', best_ndcg_20)
 
