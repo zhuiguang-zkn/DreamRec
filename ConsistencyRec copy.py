@@ -62,8 +62,10 @@ def parse_args():
                         help='Schedule timesteps at the end of training.')
     parser.add_argument('--loss_type', type=str, default='l2',
                         help='loss type.')    
-    parser.add_argument('--total_training_step', type=int, default=1000,
+    parser.add_argument('--total_training_step', type=int, default=300,
                         help='total training step.')
+    parser.add_argument('--epoch_every_step', type=int, default=3,
+                        help='epoch every step.')
     return parser.parse_args()
 
 args = parse_args()
@@ -439,62 +441,63 @@ if __name__ == '__main__':
     for current_training_step in range(args.total_training_step):
         step_loss = 0.0
         start_time = Time.time()
-        for j in range(num_batches):
-            batch = train_data.sample(n=args.batch_size).to_dict()
-            seq = list(batch['seq'].values())
-            len_seq = list(batch['len_seq'].values())
-            target=list(batch['next'].values())
+        for _ in range(args.epoch_every_step):
+            for j in range(num_batches):
+                batch = train_data.sample(n=args.batch_size).to_dict()
+                seq = list(batch['seq'].values())
+                len_seq = list(batch['len_seq'].values())
+                target=list(batch['next'].values())
 
-            optimizer.zero_grad()
-            seq = torch.LongTensor(seq)
-            len_seq = torch.LongTensor(len_seq)
-            target = torch.LongTensor(target)
+                optimizer.zero_grad()
+                seq = torch.LongTensor(seq)
+                len_seq = torch.LongTensor(len_seq)
+                target = torch.LongTensor(target)
 
-            seq = seq.to(device)
-            target = target.to(device)
-            len_seq = len_seq.to(device)
+                seq = seq.to(device)
+                target = target.to(device)
+                len_seq = len_seq.to(device)
 
 
-            x_start = model.cacu_x(target)  # e_n^0
+                x_start = model.cacu_x(target)  # e_n^0
 
-            h = model.cacu_h(seq, len_seq) # c_{n-1}
-            output = consistency_training(
-                student_model=model, 
-                teacher_model=teacher_model, 
-                x=x_start, 
-                current_training_step=current_training_step, 
-                total_training_steps=args.total_training_step,
-                h=h
-            )
-            loss = loss_fn(output.predicted, output.target)
+                h = model.cacu_h(seq, len_seq) # c_{n-1}
+                output = consistency_training(
+                    student_model=model, 
+                    teacher_model=teacher_model, 
+                    x=x_start, 
+                    current_training_step=current_training_step, 
+                    total_training_steps=args.total_training_step,
+                    h=h
+                )
+                loss = loss_fn(output.predicted, output.target)
 
-            loss.backward()
-            optimizer.step()
+                loss.backward()
+                optimizer.step()
 
-            # EMA update
-            ema_decay_rate = ema_decay_rate_schedule(
-                output.num_timesteps,
-                initial_ema_decay_rate=0.95,
-                initial_timesteps=2
-            )
-            update_ema_model_(teacher_model, model, ema_decay_rate)
+                # EMA update
+                ema_decay_rate = ema_decay_rate_schedule(
+                    output.num_timesteps,
+                    initial_ema_decay_rate=0.95,
+                    initial_timesteps=2
+                )
+                update_ema_model_(teacher_model, model, ema_decay_rate)
 
-            step_loss += loss.item()
+                step_loss += loss.item()
+        step_loss = step_loss // (args.epoch_every_step)
 
         # scheduler.step()
         if args.report_epoch:
             if current_training_step % 1 == 0:
-                print("Epoch {:03d}; ".format(current_training_step) + 'Train loss: {:.4f}; '.format(step_loss) + "Time cost: " + Time.strftime(
+                print("Step {:03d}; ".format(current_training_step) + 'Train loss: {:.4f}; '.format(step_loss) + "Time cost: " + Time.strftime(
                         "%H: %M: %S", Time.gmtime(Time.time()-start_time)))
 
-            if (current_training_step + 1) % 5 == 0:
                 consistency_sampler = ConsistencySamplingAndEditing(
                                         sigma_min=args.sigma_min,
                                         sigma_data=args.sigma_data,
                                     )
                 eval_start = Time.time()
-                print('-------------------------- VAL PHRASE --------------------------')
-                _ = evaluate(model, 'val_data.df', device, consistency_sampler)
+                # print('-------------------------- VAL PHRASE --------------------------')
+                # _ = evaluate(model, 'val_data.df', device, consistency_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
                 for sigma_num in [10, 20]:
                     hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear', sigma_num=sigma_num)
