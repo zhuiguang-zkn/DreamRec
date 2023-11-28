@@ -314,8 +314,8 @@ class Tenc(nn.Module):
         num_timesteps = improved_timesteps_schedule(
             current_training_step,
             args.total_training_step,
-            self.initial_timesteps,
-            self.final_timesteps,
+            args.initial_timesteps,
+            args.final_timesteps,
         )
         sigmas = karras_schedule(
             num_timesteps, self.sigma_min, self.sigma_max, self.rho, h.device
