@@ -313,7 +313,7 @@ class Tenc(nn.Module):
         #     sigma_list = generate_sigma_list(start_value=args.sigma_max, num=sigma_num, decay_rate=0.2, decay_style='exp')
         num_timesteps = improved_timesteps_schedule(
             current_training_step,
-            args.total_training_steps,
+            args.total_training_step,
             self.initial_timesteps,
             self.final_timesteps,
         )
