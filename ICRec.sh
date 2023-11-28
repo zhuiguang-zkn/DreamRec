@@ -21,8 +21,6 @@ INITIAL_TIMESTEPS=2
 FINAL_TIMESTEPS=150
 LOSS_TYPE="l2"
 TOTAL_TRAINING_STEP=1000
-SIGMA_STYLE="linear"
-SIGMA_NUM=10
 
 while [[ $# -gt 0 ]]; do
     key="$1"
@@ -38,7 +36,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-for LR in 0.00005 0.0001 0.001 0.01 ; do
+for LR in 0.00005 0.0001 0.0005 0.001 0.005 0.01; do
     nohup python -u ICRec.py \
         --data $DATA \
         --random_seed $RANDOM_SEED \
