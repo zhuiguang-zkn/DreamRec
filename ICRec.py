@@ -318,7 +318,7 @@ class Tenc(nn.Module):
             args.final_timesteps,
         )
         sigmas = karras_schedule(
-            num_timesteps, self.sigma_min, self.sigma_max, self.rho, h.device
+            num_timesteps, args.sigma_min, args.sigma_max, args.rho, h.device
         )[:sigma_num]
         print(sigmas)
         samples = consistency_sampler(
