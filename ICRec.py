@@ -319,7 +319,7 @@ class Tenc(nn.Module):
         )
         sigmas = karras_schedule(
             num_timesteps, args.sigma_min, args.sigma_max, args.rho, h.device
-        )[:sigma_num]
+        )[-sigma_num:][::-1]
         print(sigmas)
         samples = consistency_sampler(
             model=self,
@@ -493,8 +493,8 @@ if __name__ == '__main__':
                                         sigma_data=args.sigma_data,
                                     )
                 eval_start = Time.time()
-                print('-------------------------- VAL PHRASE --------------------------')
-                _ = evaluate(model, 'val_data.df', device, consistency_sampler)
+                # print('-------------------------- VAL PHRASE --------------------------')
+                # _ = evaluate(model, 'val_data.df', device, consistency_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
                 for sigma_num in [1,2,5, 10]:
                     hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear', sigma_num=sigma_num)
