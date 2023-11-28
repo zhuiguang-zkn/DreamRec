@@ -39,7 +39,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 for LR in 0.00005 0.0001 0.001 0.01 ; do
-    nohup python -u ICRec.py \
+    nohup python -u ConsistencyRec.py \
         --data $DATA \
         --random_seed $RANDOM_SEED \
         --batch_size $BATCH_SIZE \
