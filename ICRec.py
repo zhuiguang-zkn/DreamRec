@@ -307,25 +307,25 @@ class Tenc(nn.Module):
 
     @torch.no_grad()
     def sample(self, consistency_sampler, h, sigmas_style='linear', sigma_num=10):
-        # if sigmas_style == 'linear':
-        #     sigma_list = generate_sigma_list(start_value=args.sigma_max, num=sigma_num, decay_rate=(args.sigma_max-args.sigma_min)/sigma_num, decay_style='linear')
-        # elif sigmas_style == 'exp':
-        #     sigma_list = generate_sigma_list(start_value=args.sigma_max, num=sigma_num, decay_rate=0.2, decay_style='exp')
-        num_timesteps = improved_timesteps_schedule(
-            current_training_step,
-            args.total_training_step,
-            args.initial_timesteps,
-            args.final_timesteps,
-        )
-        sigmas = karras_schedule(
-            num_timesteps, args.sigma_min, args.sigma_max, args.rho, h.device
-        )
-        print(sigmas.shape)
-        sigmas = sigmas[-sigma_num:].flip(dims=[0])
+        if sigmas_style == 'linear':
+            sigma_list = generate_sigma_list(start_value=args.sigma_max, num=sigma_num, decay_rate=(args.sigma_max-args.sigma_min)/sigma_num, decay_style='linear')
+        elif sigmas_style == 'exp':
+            sigma_list = generate_sigma_list(start_value=args.sigma_max, num=sigma_num, decay_rate=0.2, decay_style='exp')
+        # num_timesteps = improved_timesteps_schedule(
+        #     current_training_step,
+        #     args.total_training_step,
+        #     args.initial_timesteps,
+        #     args.final_timesteps,
+        # )
+        # sigmas = karras_schedule(
+        #     num_timesteps, args.sigma_min, args.sigma_max, args.rho, h.device
+        # )
+        # print(sigmas.shape)
+        # sigmas = sigmas[-sigma_num:].flip(dims=[0])
         samples = consistency_sampler(
             model=self,
             x_initial=torch.randn_like(h) * args.sigma_max,
-            sigmas=sigmas,
+            sigmas=sigma_list,
             clip_denoised=False,
             sequence_rep=h
         )
