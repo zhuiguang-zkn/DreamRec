@@ -496,7 +496,7 @@ if __name__ == '__main__':
                 # print('-------------------------- VAL PHRASE --------------------------')
                 # _ = evaluate(model, 'val_data.df', device, consistency_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
-                for sigma_num in [1,2,5, 10]:
+                for sigma_num in [1,2,5, 10, 20]:
                     hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear', sigma_num=sigma_num)
                     if hr_20 > best_hr_20: 
                         counter = 0
