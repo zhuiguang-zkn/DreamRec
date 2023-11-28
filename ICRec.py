@@ -469,7 +469,7 @@ if __name__ == '__main__':
 
             h = model.cacu_h(seq, len_seq) # c_{n-1}
             output = improved_consistency_training(
-                student_model=model, 
+                model=model, 
                 x=x_start, 
                 current_training_step=current_training_step, 
                 total_training_steps=args.total_training_step,
