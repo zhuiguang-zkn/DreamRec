@@ -319,7 +319,7 @@ class Tenc(nn.Module):
         )
         sigmas = karras_schedule(
             num_timesteps, args.sigma_min, args.sigma_max, args.rho, h.device
-        )[-sigma_num:][::-1]
+        )[-sigma_num:].flip()
         print(sigmas)
         samples = consistency_sampler(
             model=self,
