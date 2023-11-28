@@ -40,7 +40,7 @@ done
 
 for LR in 0.00005 0.0001 0.001 0.01 ; do
     for EPOCH_EVERY_STEP in 1 2 3 4 5; do
-        for FINAL_TIMESTEPS in 100 150 200 250; do 
+        for FINAL_TIMESTEPS in 200 300; do 
             nohup python -u ConsistencyRec.py \
                 --data $DATA \
                 --random_seed $RANDOM_SEED \
