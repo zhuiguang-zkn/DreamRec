@@ -488,7 +488,7 @@ if __name__ == '__main__':
                 print("Epoch {:03d}; ".format(current_training_step) + 'Train loss: {:.4f}; '.format(step_loss) + "Time cost: " + Time.strftime(
                         "%H: %M: %S", Time.gmtime(Time.time()-start_time)))
 
-            if (current_training_step + 1) % 5 == 0:
+            # if (current_training_step + 1) % 1 == 0:
                 consistency_sampler = ConsistencySamplingAndEditing(
                                         sigma_min=args.sigma_min,
                                         sigma_data=args.sigma_data,
