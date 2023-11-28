@@ -320,7 +320,7 @@ class Tenc(nn.Module):
         sigmas = karras_schedule(
             num_timesteps, args.sigma_min, args.sigma_max, args.rho, h.device
         )[-sigma_num:].flip(dims=[0])
-        print(sigmas)
+        # print(sigmas)
         samples = consistency_sampler(
             model=self,
             x_initial=torch.randn_like(h) * args.sigma_max,
