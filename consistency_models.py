@@ -1,6 +1,7 @@
 import math
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Optional, Tuple, Union
+import numpy as np
 
 import torch
 from torch import Tensor, nn
@@ -217,7 +218,7 @@ def pseudo_huber_loss(input: Tensor, target: Tensor) -> Tensor:
     Tensor
         Pseudo huber loss.
     """
-    c = 0.00054 * math.sqrt(math.prod(input.shape[1:]))
+    c = 0.00054 * math.sqrt(np.prod(input.shape[1:]))
     return torch.sqrt((input - target) ** 2 + c**2) - c
 
 
