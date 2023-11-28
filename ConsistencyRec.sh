@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-for LR in 0.00005 0.0001 0.001 0.01 ; do
+for LR in 0.0001 ; do
     for EPOCH_EVERY_STEP in 1 2 3 4 5; do
         for FINAL_TIMESTEPS in 200 300; do 
             nohup python -u ConsistencyRec.py \
