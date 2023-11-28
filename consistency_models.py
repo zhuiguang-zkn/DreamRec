@@ -486,6 +486,7 @@ class ImprovedConsistencyTraining:
         x: Tensor,
         current_training_step: int,
         total_training_steps: int,
+        h: Tensor,
         **kwargs: Any,
     ) -> ConsistencyTrainingOutput:
         """Runs one step of the improved consistency training algorithm.
@@ -534,6 +535,7 @@ class ImprovedConsistencyTraining:
             model,
             next_noisy_x,
             next_sigmas,
+            h,
             self.sigma_data,
             self.sigma_min,
             **kwargs,
@@ -545,6 +547,7 @@ class ImprovedConsistencyTraining:
                 model,
                 current_noisy_x,
                 current_sigmas,
+                h,
                 self.sigma_data,
                 self.sigma_min,
                 **kwargs,
