@@ -390,7 +390,7 @@ if __name__ == '__main__':
     item_num = data_statis['item_num'][0]  # total number of items
     topk=[10, 20, 50]
 
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:{}".format(args.cuda) if torch.cuda.is_available() else "cpu")
     model = Tenc(args.hidden_factor,item_num, seq_size, args.dropout_rate, args.diffuser_type, device)
 
     if args.optimizer == 'adam':
