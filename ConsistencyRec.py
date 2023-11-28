@@ -44,7 +44,7 @@ def parse_args():
                         help='report frequency')
     parser.add_argument('--diffuser_type', type=str, default='mlp1',
                         help='type of diffuser.')
-    parser.add_argument('--optimizer', type=str, default='adam',
+    parser.add_argument('--optimizer', type=str, default='adamw',
                         help='type of optimizer.')
     parser.add_argument('--descri', type=str, default='',
                         help='description of the work.')
@@ -66,6 +66,8 @@ def parse_args():
                         help='total training step.')
     parser.add_argument('--epoch_every_step', type=int, default=3,
                         help='epoch every step.')
+    parser.add_argument('--introduce_uncondition', type=bool, default=False,
+                        help='introduce uncondition.')
     return parser.parse_args()
 
 args = parse_args()
@@ -499,7 +501,7 @@ if __name__ == '__main__':
                 # print('-------------------------- VAL PHRASE --------------------------')
                 # _ = evaluate(model, 'val_data.df', device, consistency_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
-                for sigma_num in [10, 20]:
+                for sigma_num in [1, 2, 5, 10, 20]:
                     hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear', sigma_num=sigma_num)
                     if hr_20 > best_hr_20: 
                         counter = 0
