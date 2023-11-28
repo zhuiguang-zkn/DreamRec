@@ -319,7 +319,7 @@ class Tenc(nn.Module):
         )
         sigmas = karras_schedule(
             num_timesteps, args.sigma_min, args.sigma_max, args.rho, h.device
-        )[-sigma_num:].flip()
+        )[-sigma_num:].flip(dims=[0])
         print(sigmas)
         samples = consistency_sampler(
             model=self,
@@ -503,12 +503,12 @@ if __name__ == '__main__':
                         best_hr_20 = hr_20
                         best_ndcg_20 = ndcg_20
                         best_epoch = current_training_step
-                    hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='exp', sigma_num=sigma_num)
-                    if hr_20 > best_hr_20:
-                        counter = 0
-                        best_hr_20 = hr_20
-                        best_ndcg_20 = ndcg_20
-                        best_epoch = current_training_step
+                    # hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='exp', sigma_num=sigma_num)
+                    # if hr_20 > best_hr_20:
+                    #     counter = 0
+                    #     best_hr_20 = hr_20
+                    #     best_ndcg_20 = ndcg_20
+                    #     best_epoch = current_training_step
                 print("Evalution cost: " + Time.strftime("%H: %M: %S", Time.gmtime(Time.time()-eval_start)))
                 print('----------------------------------------------------------------')
 
