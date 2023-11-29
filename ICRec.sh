@@ -38,33 +38,33 @@ while [[ $# -gt 0 ]]; do
 done
 
 
-for LR in 0.001 0.005 0.01; do
+for LR in 0.0001 0.001 0.005 0.01; do
     for EPOCH_EVERY_STEP in 1 3 5 10; do 
         for INITIAL_TIMESTEPS in 2 10 50; do
             for FINAL_TIMESTEPS in 150 1280 5000; do 
-        nohup python -u ICRec.py \
-            --data $DATA \
-            --random_seed $RANDOM_SEED \
-            --batch_size $BATCH_SIZE \
-            --layers $LAYERS \
-            --hidden_factor $HIDDEN_FACTOR \
-            --lr $LR \
-            --l2_decay $L2_DECAY \
-            --cuda $CUDA \
-            --dropout_rate $DROPOUT_RATE \
-            --report_epoch $REPORT_EPOCH \
-            --diffuser_type $DIFFUSER_TYPE \
-            --optimizer $OPTIMIZER \
-            --descri "$DESCRI" \
-            --sigma_min $SIGMA_MIN \
-            --sigma_max $SIGMA_MAX \
-            --rho $RHO \
-            --sigma_data $SIGMA_DATA \
-            --initial_timesteps $INITIAL_TIMESTEPS \
-            --final_timesteps $FINAL_TIMESTEPS \
-            --loss_type $LOSS_TYPE \
-            --total_training_step $TOTAL_TRAINING_STEP \
-            > ./log/ICRec_1/ICRec_data_${DATA}_lr_${LR}_epoch_${EPOCH_EVERY_STEP}_initstep_${INITIAL_TIMESTEPS}_endstep_${FINAL_TIMESTEPS}.log 2>&1 &
+                nohup python -u ICRec.py \
+                    --data $DATA \
+                    --random_seed $RANDOM_SEED \
+                    --batch_size $BATCH_SIZE \
+                    --layers $LAYERS \
+                    --hidden_factor $HIDDEN_FACTOR \
+                    --lr $LR \
+                    --l2_decay $L2_DECAY \
+                    --cuda $CUDA \
+                    --dropout_rate $DROPOUT_RATE \
+                    --report_epoch $REPORT_EPOCH \
+                    --diffuser_type $DIFFUSER_TYPE \
+                    --optimizer $OPTIMIZER \
+                    --descri "$DESCRI" \
+                    --sigma_min $SIGMA_MIN \
+                    --sigma_max $SIGMA_MAX \
+                    --rho $RHO \
+                    --sigma_data $SIGMA_DATA \
+                    --initial_timesteps $INITIAL_TIMESTEPS \
+                    --final_timesteps $FINAL_TIMESTEPS \
+                    --loss_type $LOSS_TYPE \
+                    --total_training_step $TOTAL_TRAINING_STEP \
+                    > ./log/ICRec_1/ICRec_data_${DATA}_lr_${LR}_epoch_${EPOCH_EVERY_STEP}_initstep_${INITIAL_TIMESTEPS}_endstep_${FINAL_TIMESTEPS}.log 2>&1 &
             done
         done
     done
