@@ -6,7 +6,7 @@ RANDOM_SEED=100
 BATCH_SIZE=256
 LAYERS=1
 HIDDEN_FACTOR=64
-LR=0.005
+LR=0.0001
 L2_DECAY=0
 CUDA=4
 DROPOUT_RATE=0.1
@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 
-for LR in 0.0001 0.001 0.005 0.01; do
+# for LR in 0.0001 0.001 0.005 0.01; do
     for EPOCH_EVERY_STEP in 1 3 5 10; do 
         for INITIAL_TIMESTEPS in 2 10 50; do
             for FINAL_TIMESTEPS in 150 1280 5000; do 
@@ -68,5 +68,5 @@ for LR in 0.0001 0.001 0.005 0.01; do
             done
         done
     done
-done
+# done
                                                                             
