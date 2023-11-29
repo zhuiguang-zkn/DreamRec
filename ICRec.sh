@@ -64,7 +64,7 @@ for LR in 0.001 0.005 0.01; do
             --final_timesteps $FINAL_TIMESTEPS \
             --loss_type $LOSS_TYPE \
             --total_training_step $TOTAL_TRAINING_STEP \
-            > ./log/ICRec_data_${DATA}_lr_${LR}_epoch_${EPOCH_EVERY_STEP}_initstep_${INITIAL_TIMESTEPS}_endstep_${FINAL_TIMESTEPS}.log 2>&1 &
+            > ./log/ICRec_1/ICRec_data_${DATA}_lr_${LR}_epoch_${EPOCH_EVERY_STEP}_initstep_${INITIAL_TIMESTEPS}_endstep_${FINAL_TIMESTEPS}.log 2>&1 &
             done
         done
     done
