@@ -62,8 +62,11 @@ def parse_args():
                         help='Schedule timesteps at the end of training.')
     parser.add_argument('--loss_type', type=str, default='l2',
                         help='loss type.')    
-    parser.add_argument('--total_training_step', type=int, default=1000,
+    parser.add_argument('--total_training_step', type=int, default=500,
                         help='total training step.')
+    parser.add_argument('--epoch_every_step', type=int, default=1,
+                        help='epoch every step.')
+    
     return parser.parse_args()
 
 args = parse_args()
@@ -388,7 +391,7 @@ def evaluate(model, test_data, device, consistency_sampler, sigma_style='linear'
 if __name__ == '__main__':
 
     # args = parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 
     data_directory = './data/' + args.data
     data_statis = pd.read_pickle(
@@ -397,7 +400,7 @@ if __name__ == '__main__':
     item_num = data_statis['item_num'][0]  # total number of items
     topk=[10, 20, 50]
 
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    device = torch.device(f"cuda:{args.cuda}" if torch.cuda.is_available() else "cpu")
     model = Tenc(args.hidden_factor,item_num, seq_size, args.dropout_rate, args.diffuser_type, device)
 
     if args.optimizer == 'adam':
@@ -450,37 +453,38 @@ if __name__ == '__main__':
     for current_training_step in range(args.total_training_step):
         step_loss = 0.0
         start_time = Time.time()
-        for j in range(num_batches):
-            batch = train_data.sample(n=args.batch_size).to_dict()
-            seq = list(batch['seq'].values())
-            len_seq = list(batch['len_seq'].values())
-            target=list(batch['next'].values())
+        for _ in range(args.epoch_every_step):
+            for j in range(num_batches):
+                batch = train_data.sample(n=args.batch_size).to_dict()
+                seq = list(batch['seq'].values())
+                len_seq = list(batch['len_seq'].values())
+                target=list(batch['next'].values())
 
-            optimizer.zero_grad()
-            seq = torch.LongTensor(seq)
-            len_seq = torch.LongTensor(len_seq)
-            target = torch.LongTensor(target)
+                optimizer.zero_grad()
+                seq = torch.LongTensor(seq)
+                len_seq = torch.LongTensor(len_seq)
+                target = torch.LongTensor(target)
 
-            seq = seq.to(device)
-            target = target.to(device)
-            len_seq = len_seq.to(device)
+                seq = seq.to(device)
+                target = target.to(device)
+                len_seq = len_seq.to(device)
 
 
-            x_start = model.cacu_x(target)  # e_n^0
+                x_start = model.cacu_x(target)  # e_n^0
 
-            h = model.cacu_h(seq, len_seq) # c_{n-1}
-            output = improved_consistency_training(
-                model=model, 
-                x=x_start, 
-                current_training_step=current_training_step, 
-                total_training_steps=args.total_training_step,
-                h=h
-            )
-            loss = (pseudo_huber_loss(output.predicted, output.target) * output.loss_weights).mean()
+                h = model.cacu_h(seq, len_seq) # c_{n-1}
+                output = improved_consistency_training(
+                    model=model, 
+                    x=x_start, 
+                    current_training_step=current_training_step, 
+                    total_training_steps=args.total_training_step,
+                    h=h
+                )
+                loss = (pseudo_huber_loss(output.predicted, output.target) * output.loss_weights).mean()
 
-            loss.backward()
-            optimizer.step()
-            step_loss += loss.item()
+                loss.backward()
+                optimizer.step()
+                step_loss += loss.item()
 
         
         if args.report_epoch:
