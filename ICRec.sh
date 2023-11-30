@@ -38,10 +38,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 
-# for LR in 0.0001 0.001 0.005 0.01; do
+for LR in 0.0001 0.001 0.005 0.01; do
     for EPOCH_EVERY_STEP in 1 3 5 10; do 
-        for INITIAL_TIMESTEPS in 2 10 50; do
-            for FINAL_TIMESTEPS in 150 1280 5000; do 
+        # for INITIAL_TIMESTEPS in 2 10 50; do
+        #     for FINAL_TIMESTEPS in 150 1280 5000; do 
                 nohup python -u ICRec.py \
                     --data $DATA \
                     --random_seed $RANDOM_SEED \
@@ -64,9 +64,9 @@ done
                     --final_timesteps $FINAL_TIMESTEPS \
                     --loss_type $LOSS_TYPE \
                     --total_training_step $TOTAL_TRAINING_STEP \
+                    --epoch_every_step $EPOCH_EVERY_STEP \
                     > ./log/ICRec_1/ICRec_data_${DATA}_lr_${LR}_epoch_${EPOCH_EVERY_STEP}_initstep_${INITIAL_TIMESTEPS}_endstep_${FINAL_TIMESTEPS}.log 2>&1 &
             done
         done
-    done
 # done
                                                                             

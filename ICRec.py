@@ -485,14 +485,14 @@ if __name__ == '__main__':
                 loss.backward()
                 optimizer.step()
                 step_loss += loss.item()
+        step_loss /= (args.epoch_every_step * num_batches)
 
-        
         if args.report_epoch:
             if current_training_step % 1 == 0:
-                print("Epoch {:03d}; ".format(current_training_step) + 'Train loss: {:.4f}; '.format(step_loss) + "Time cost: " + Time.strftime(
+                print("Step {:03d}; ".format(current_training_step) + 'Train loss: {:.4f}; '.format(step_loss) + "Time cost: " + Time.strftime(
                         "%H: %M: %S", Time.gmtime(Time.time()-start_time)))
 
-            # if (current_training_step + 1) % 1 == 0:
+            if (current_training_step + 1) % 2 == 0:
                 consistency_sampler = ConsistencySamplingAndEditing(
                                         sigma_min=args.sigma_min,
                                         sigma_data=args.sigma_data,
@@ -501,7 +501,7 @@ if __name__ == '__main__':
                 # print('-------------------------- VAL PHRASE --------------------------')
                 # _ = evaluate(model, 'val_data.df', device, consistency_sampler)
                 print('-------------------------- TEST PHRASE -------------------------')
-                for sigma_num in [1,2,5, 10, 20]:
+                for sigma_num in [1,2,5]:
                     hr_20, ndcg_20 = evaluate(model, 'test_data.df', device, consistency_sampler, sigma_style='linear', sigma_num=sigma_num)
                     if hr_20 > best_hr_20: 
                         counter = 0
