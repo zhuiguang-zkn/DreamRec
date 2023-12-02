@@ -387,7 +387,13 @@ def evaluate(model, test_data, device, consistency_sampler, sigma_style='linear'
 
     return hr_20, ndcg_20
 
-
+def convert_float_to_int(nested_list):
+    if isinstance(nested_list, list):
+        return [convert_float_to_int(item) for item in nested_list]
+    elif isinstance(nested_list, float):
+        return int(nested_list)
+    else:
+        return nested_list
 if __name__ == '__main__':
 
     # args = parse_args()
@@ -457,8 +463,10 @@ if __name__ == '__main__':
             for j in range(num_batches):
                 batch = train_data.sample(n=args.batch_size).to_dict()
                 seq = list(batch['seq'].values())
+                seq = convert_float_to_int(seq)
                 len_seq = list(batch['len_seq'].values())
                 target=list(batch['next'].values())
+                target = convert_float_to_int(target)
 
                 optimizer.zero_grad()
                 seq = torch.LongTensor(seq)
