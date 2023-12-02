@@ -238,11 +238,11 @@ class Tenc(nn.Module):
             res = self.diffuser(torch.cat((x, h, sigma), dim=1))
         return res
 
-    def forward_uncon(self, x, step):
+    def forward_uncon(self, x, sigma):
         h = self.none_embedding(torch.tensor([0]).to(self.device))
         h = torch.cat([h.view(1, 64)]*x.shape[0], dim=0)
 
-        t = self.step_mlp(step)
+        t = self.noise_mlp(sigma)
 
         if self.diffuser_type == 'mlp1':
             res = self.diffuser(torch.cat((x, h, t), dim=1))
@@ -273,15 +273,14 @@ class Tenc(nn.Module):
         state_hidden = extract_axis_1(ff_out, len_states - 1)
         h = state_hidden.squeeze()
 
-        # B, D = h.shape[0], h.shape[1]
-        # mask1d = (torch.sign(torch.rand(B) - p) + 1) / 2
-        # maske1d = mask1d.view(B, 1)
-        # mask = torch.cat([maske1d] * D, dim=1)
-        # mask = mask.to(self.device)
+        B, D = h.shape[0], h.shape[1]
+        mask1d = (torch.sign(torch.rand(B) - p) + 1) / 2
+        maske1d = mask1d.view(B, 1)
+        mask = torch.cat([maske1d] * D, dim=1)
+        mask = mask.to(self.device)
 
         # print(h.device, self.none_embedding(torch.tensor([0]).to(self.device)).device, mask.device)
-        # h = h * mask + self.none_embedding(torch.tensor([0]).to(self.device)) * (1-mask)
-
+        h = h * mask + self.none_embedding(torch.tensor([0]).to(self.device)) * (1-mask)
 
         return h  
     

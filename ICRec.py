@@ -461,9 +461,9 @@ if __name__ == '__main__':
                 target=list(batch['next'].values())
 
                 optimizer.zero_grad()
-                seq = torch.LongTensor(seq)
-                len_seq = torch.LongTensor(len_seq)
-                target = torch.LongTensor(target)
+                seq = torch.LongTensor(int(seq))
+                len_seq = torch.LongTensor(int(len_seq))
+                target = torch.LongTensor(int(target))
 
                 seq = seq.to(device)
                 target = target.to(device)
