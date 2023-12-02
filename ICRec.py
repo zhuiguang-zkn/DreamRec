@@ -456,9 +456,12 @@ if __name__ == '__main__':
         for _ in range(args.epoch_every_step):
             for j in range(num_batches):
                 batch = train_data.sample(n=args.batch_size).to_dict()
-                seq = list(int(batch['seq'].values()))
-                len_seq = list(int(batch['len_seq'].values()))
-                target=list(int(batch['next'].values()))
+                seq = list(batch['seq'].values())
+                seq = [int(i) for i in seq]
+                len_seq = list(batch['len_seq'].values())
+                len_seq = [int(i) for i in len_seq]
+                target=list(batch['next'].values())
+                target = [int(i) for i in target]   
 
                 optimizer.zero_grad()
                 seq = torch.LongTensor(seq)
