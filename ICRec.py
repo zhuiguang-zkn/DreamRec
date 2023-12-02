@@ -457,11 +457,8 @@ if __name__ == '__main__':
             for j in range(num_batches):
                 batch = train_data.sample(n=args.batch_size).to_dict()
                 seq = list(batch['seq'].values())
-                seq = [int(i) for i in seq]
                 len_seq = list(batch['len_seq'].values())
-                len_seq = [int(i) for i in len_seq]
                 target=list(batch['next'].values())
-                target = [int(i) for i in target]   
 
                 optimizer.zero_grad()
                 seq = torch.LongTensor(seq)
